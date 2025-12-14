@@ -9,6 +9,9 @@ namespace HangmanGame
 {
     public partial class Form1 : Form
     {
+        // Объект для отрисовки виселицы
+        private HangmanDrawer hangmanDrawer;
+
         // Хранит загаданное слово в верхнем регистре
         private string secretWord = "";
 
@@ -26,7 +29,8 @@ namespace HangmanGame
 
         public Form1()
         {
-            InitializeComponent(); // Стандартная инициализация формы Windows Forms
+            InitializeComponent(); // Загружает интерфейс из Form1.Designer.cs
+            hangmanDrawer = new HangmanDrawer(); // Создаем отдельный объект для рисования
         }
 
         // Обработчик нажатия кнопки "Загадать слово"
@@ -46,7 +50,7 @@ namespace HangmanGame
             inputForm.MinimizeBox = false;
             inputForm.ShowInTaskbar = false;
 
-            // Метка с инструкцией
+            // Метка с инструкцией для первого игрока
             var label = new Label
             {
                 Text = "Игрок 1, введите слово (2–15 букв, только буквы, без пробелов):",
@@ -85,7 +89,7 @@ namespace HangmanGame
                 if (string.IsNullOrEmpty(input))
                 {
                     MessageBox.Show("Слово не может быть пустым.");
-                    textBox.Focus();
+                    textBox.Focus(); // Возвращаем фокус на поле ввода
                     return;
                 }
 
@@ -125,8 +129,8 @@ namespace HangmanGame
                 wrongAttempts = 0; // Сбрасываем счетчик ошибок
 
                 UpdateDisplay(); // Обновляем интерфейс
-                pictureBox.Refresh(); 
-                txtInput.Focus();
+                pictureBox.Refresh(); // Перерисовываем виселицу (сброс на начальное состояние)
+                txtInput.Focus(); // Устанавливаем фокус на поле ввода для удобства игрока
             }
         }
 
@@ -151,8 +155,7 @@ namespace HangmanGame
         // Проверяет введенную букву и обновляет состояние игры
         private void ProcessGuess()
         {
-            // Получаем ссылку на текстовое поле ввода
-            string input = txtInput.Text.ToUpper().Trim();
+            string input = txtInput.Text.ToUpper().Trim(); // Приводим к верхнему регистру
 
             if (input.Length == 0) return; // Если поле пустое - ничего не делаем
             char letter = input[0]; // Берем первый символ
@@ -162,7 +165,7 @@ namespace HangmanGame
             {
                 SystemSounds.Beep.Play(); // Звуковое уведомление об ошибке
                 MessageBox.Show("Введите букву!");
-                txtInput.Clear();
+                txtInput.Clear(); // Очищаем поле для нового ввода
                 return;
             }
 
@@ -177,7 +180,7 @@ namespace HangmanGame
 
             // Добавляем букву в использованные
             usedLetters.Add(letter);
-            txtInput.Clear(); // Очищаем поле ввода
+            txtInput.Clear(); // Очищаем поле ввода для следующей буквы
 
             // Проверяем, есть ли буква в загаданном слове
             if (secretWord.Contains(letter))
@@ -197,7 +200,7 @@ namespace HangmanGame
                 SystemSounds.Beep.Play(); // Сигнал об ошибке
             }
 
-            UpdateDisplay(); // Обновляем интерфейс
+            UpdateDisplay(); // Обновляем интерфейс (слово и список букв)
 
             // Проверка условий победы/поражения
             if (guessedWord == secretWord)
@@ -218,7 +221,10 @@ namespace HangmanGame
         // Обновляет метки с угаданным словом и использованными буквами
         private void UpdateDisplay()
         {
-            lblWord.Text = string.Join(" ", guessedWord.ToCharArray()); // ← прямое обращение
+            // Преобразуем строку в массив символов и соединяем с пробелами для читаемости
+            lblWord.Text = string.Join(" ", guessedWord.ToCharArray());
+
+            // Отображаем использованные буквы в алфавитном порядке через запятую
             lblUsed.Text = "Использованные буквы: " +
                 string.Join(", ", usedLetters.OrderBy(c => c));
         }
@@ -233,35 +239,15 @@ namespace HangmanGame
             wrongAttempts = 0;
             lblWord.Text = "";
             lblUsed.Text = "Использованные буквы: ";
-            pictureBox.Refresh();
+            pictureBox.Refresh(); // Перерисовывает пустую виселицу
         }
 
-        // Отрисовка виселицы и человечка
-        // Вызывается при каждой перерисовке PictureBox
+        // Обработчик события перерисовки PictureBox (отрисовка виселицы и человечка)
+        // Отрисовка виселицы происходит в отдельном классе HangmanDrawer
         private void PictureBox_Paint(object sender, PaintEventArgs e)
         {
-            Graphics g = e.Graphics;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias; // Сглаживание линий
-
-            // Рисуем основу виселицы (всегда видна)
-            g.DrawLine(Pens.Black, 50, 230, 250, 230); // Основание (земля)
-            g.DrawLine(Pens.Black, 100, 230, 100, 40);  // Столб (вертикальная часть)
-            g.DrawLine(Pens.Black, 100, 40, 200, 40);   // Верхняя перекладина
-            g.DrawLine(Pens.Black, 200, 40, 200, 60);   // Верёвка
-
-            // Рисуем части человечка в зависимости от количества ошибок
-            if (wrongAttempts >= 1) g.DrawEllipse(Pens.Black, 185, 60, 30, 30);      // Голова
-            if (wrongAttempts >= 2) g.DrawLine(Pens.Black, 200, 90, 200, 140);       // Тело
-            if (wrongAttempts >= 3) g.DrawLine(Pens.Black, 200, 100, 180, 120);      // Левая рука
-            if (wrongAttempts >= 4) g.DrawLine(Pens.Black, 200, 100, 220, 120);      // Правая рука
-            if (wrongAttempts >= 5) g.DrawLine(Pens.Black, 200, 140, 185, 170);      // Левая нога
-            if (wrongAttempts >= 6) g.DrawLine(Pens.Black, 200, 140, 215, 170);      // Правая нога
-        }
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-
-        }              
+            hangmanDrawer.Draw(e.Graphics, wrongAttempts);
+        }     
                
     }
 }
